@@ -10,7 +10,6 @@ A simple Android alternative Pinterest frontend. Scrapes Pinterest directly (bas
 - Download images
 - Create collages from saved pins
 - Optional Binternet proxy support for privacy
-- Paste Pinterest URLs to open directly in-app
 - Share collages with anyone in the world with text based api via paste.rs
 - No accounts
 
