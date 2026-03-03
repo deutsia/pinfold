@@ -12,14 +12,13 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.content.ContentValues;
+import android.content.pm.ApplicationInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Log;
-
-import com.deutsia.pinfold.BuildConfig;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -85,6 +84,10 @@ public class PrivacyHttpPlugin extends Plugin {
         }
     };
 
+    private boolean isDebuggable() {
+        return (getContext().getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+    }
+
     private static boolean isI2P(String url) {
         return url.contains(".b32.i2p");
     }
@@ -144,7 +147,7 @@ public class PrivacyHttpPlugin extends Plugin {
         }
 
         String proxyType = isI2P(url) ? "I2P" : isTor(url) ? "Tor" : "direct";
-        if (BuildConfig.DEBUG) Log.d(TAG, method + " via " + proxyType);
+        if (isDebuggable()) Log.d(TAG, method + " via " + proxyType);
 
         // Network calls must run off the main thread.
         new Thread(() -> {
@@ -176,7 +179,7 @@ public class PrivacyHttpPlugin extends Plugin {
                 long startMs = System.currentTimeMillis();
                 try (Response response = client.newCall(rb.build()).execute()) {
                     long elapsedMs = System.currentTimeMillis() - startMs;
-                    if (BuildConfig.DEBUG) Log.d(TAG, "Response " + response.code() + " in " + elapsedMs + "ms");
+                    if (isDebuggable()) Log.d(TAG, "Response " + response.code() + " in " + elapsedMs + "ms");
 
                     JSObject responseHeaders = new JSObject();
                     for (String name : response.headers().names()) {
@@ -192,7 +195,7 @@ public class PrivacyHttpPlugin extends Plugin {
                         byte[] bytes = response.body() != null
                             ? response.body().bytes()
                             : new byte[0];
-                        if (BuildConfig.DEBUG) {
+                        if (isDebuggable()) {
                             Log.d(TAG, "Blob response: " + bytes.length + " bytes");
                             if (bytes.length == 0) {
                                 Log.w(TAG, "Empty blob body");
@@ -216,10 +219,10 @@ public class PrivacyHttpPlugin extends Plugin {
                     call.resolve(result);
                 }
             } catch (IOException e) {
-                if (BuildConfig.DEBUG) Log.e(TAG, "Network error: " + e.getMessage());
+                if (isDebuggable()) Log.e(TAG, "Network error: " + e.getMessage());
                 call.reject(e.getMessage(), "NETWORK_ERROR", e);
             } catch (Exception e) {
-                if (BuildConfig.DEBUG) Log.e(TAG, "Unexpected error: " + e.getMessage());
+                if (isDebuggable()) Log.e(TAG, "Unexpected error: " + e.getMessage());
                 call.reject(e.getMessage(), "UNKNOWN_ERROR", e);
             }
         }).start();
@@ -276,7 +279,7 @@ public class PrivacyHttpPlugin extends Plugin {
                         os.flush();
                     }
 
-                    if (BuildConfig.DEBUG) Log.d(TAG, "Saved " + safeFileName + " to Downloads via MediaStore (" + bytes.length + " bytes)");
+                    if (isDebuggable()) Log.d(TAG, "Saved " + safeFileName + " to Downloads via MediaStore (" + bytes.length + " bytes)");
                 } else {
                     // API < 29 — write directly to public Downloads folder
                     File downloadsDir = Environment.getExternalStoragePublicDirectory(
@@ -291,7 +294,7 @@ public class PrivacyHttpPlugin extends Plugin {
                         fos.flush();
                     }
 
-                    if (BuildConfig.DEBUG) Log.d(TAG, "Saved " + safeFileName + " (" + bytes.length + " bytes)");
+                    if (isDebuggable()) Log.d(TAG, "Saved " + safeFileName + " (" + bytes.length + " bytes)");
                 }
 
                 JSObject result = new JSObject();
@@ -299,7 +302,7 @@ public class PrivacyHttpPlugin extends Plugin {
                 result.put("fileName", safeFileName);
                 call.resolve(result);
             } catch (Exception e) {
-                if (BuildConfig.DEBUG) Log.e(TAG, "Failed to save to Downloads: " + e.getMessage());
+                if (isDebuggable()) Log.e(TAG, "Failed to save to Downloads: " + e.getMessage());
                 call.reject("Failed to save: " + e.getMessage(), "SAVE_ERROR", e);
             }
         }).start();

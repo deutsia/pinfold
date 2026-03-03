@@ -155,6 +155,17 @@ No Content Security Policy meta tag is set. While this is a Capacitor app (not a
 
 ---
 
+### INFO — npm Dependency Vulnerabilities
+
+`npm audit` reports 5 vulnerabilities (3 low, 2 high):
+
+1. **`cookie` < 0.7.0** (low) — Accepts cookie name/path/domain with out-of-bounds characters. Transitive via `@sveltejs/kit`. Not exploitable here (no SSR/server-side cookie handling in a Capacitor app).
+2. **`tar` <= 7.5.7** (high) — Multiple path traversal and symlink poisoning issues. Transitive via `@capacitor/cli`. Only affects the build tool, not the shipped app. Fix requires upgrading to `@capacitor/cli@8.x` (breaking change).
+
+**Recommendation:** These are build-time dependencies only and don't affect the shipped APK. Upgrade to `@capacitor/cli@8.x` and `@sveltejs/kit@3.x` when ready for the breaking changes. Running `npm audit fix --force` would downgrade `@sveltejs/kit` to `0.0.30` which is not viable.
+
+---
+
 ### INFO — Positive Security Observations
 
 1. **No innerHTML/dangerouslySetInnerHTML usage** — All user-facing data is rendered via Svelte's `{text}` interpolation, which auto-escapes HTML. No XSS vectors found.
