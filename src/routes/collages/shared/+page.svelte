@@ -50,8 +50,13 @@
 				throw new Error('Invalid collage data format');
 			}
 
-			collageName = parsed.n;
-			const pinIds: string[] = parsed.p.map(String);
+			// Validate name length and pin IDs
+			collageName = parsed.n.slice(0, 200);
+			const MAX_PINS = 500;
+			const pinIds: string[] = parsed.p
+				.slice(0, MAX_PINS)
+				.map(String)
+				.filter((id: string) => /^\d+$/.test(id));
 			totalCount = pinIds.length;
 
 			if (pinIds.length === 0) {

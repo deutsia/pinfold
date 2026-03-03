@@ -19,6 +19,8 @@ import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Log;
 
+import com.deutsia.pinfold.BuildConfig;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -142,7 +144,7 @@ public class PrivacyHttpPlugin extends Plugin {
         }
 
         String proxyType = isI2P(url) ? "I2P" : isTor(url) ? "Tor" : "direct";
-        Log.d(TAG, method + " " + url + " via " + proxyType);
+        if (BuildConfig.DEBUG) Log.d(TAG, method + " via " + proxyType);
 
         // Network calls must run off the main thread.
         new Thread(() -> {
@@ -174,7 +176,7 @@ public class PrivacyHttpPlugin extends Plugin {
                 long startMs = System.currentTimeMillis();
                 try (Response response = client.newCall(rb.build()).execute()) {
                     long elapsedMs = System.currentTimeMillis() - startMs;
-                    Log.d(TAG, "Response " + response.code() + " in " + elapsedMs + "ms from " + url);
+                    if (BuildConfig.DEBUG) Log.d(TAG, "Response " + response.code() + " in " + elapsedMs + "ms");
 
                     JSObject responseHeaders = new JSObject();
                     for (String name : response.headers().names()) {
@@ -186,46 +188,21 @@ public class PrivacyHttpPlugin extends Plugin {
                     result.put("headers", responseHeaders);
 
                     if ("blob".equals(responseType)) {
-                        // Debug: check if request was redirected
-                        String finalUrl = response.request().url().toString();
-                        if (!finalUrl.equals(url)) {
-                            Log.w(TAG, "Redirected! Original: " + url);
-                            Log.w(TAG, "Redirected! Final: " + finalUrl);
-                        }
-                        if (response.priorResponse() != null) {
-                            Log.w(TAG, "Prior response: " + response.priorResponse().code()
-                                + " " + response.priorResponse().message());
-                            String location = response.priorResponse().header("Location");
-                            if (location != null) {
-                                Log.w(TAG, "Prior Location header: " + location);
-                            }
-                        }
-
-                        // Log all response headers for debugging
-                        Log.d(TAG, "Blob response headers: " + response.headers());
-
                         // Return binary data as base64 (for image loading).
                         byte[] bytes = response.body() != null
                             ? response.body().bytes()
                             : new byte[0];
-                        Log.d(TAG, "Blob response: " + bytes.length + " bytes");
-
-                        if (bytes.length > 0 && bytes.length < 1000) {
-                            // Small response — might be an error message, log it.
-                            Log.d(TAG, "Small blob body: " + new String(bytes, "UTF-8"));
-                        }
-                        if (bytes.length == 0) {
-                            Log.w(TAG, "Empty blob body! url=" + url
-                                + " finalUrl=" + finalUrl
-                                + " bodyNull=" + (response.body() == null)
-                                + " contentLength=" + response.body().contentLength());
+                        if (BuildConfig.DEBUG) {
+                            Log.d(TAG, "Blob response: " + bytes.length + " bytes");
+                            if (bytes.length == 0) {
+                                Log.w(TAG, "Empty blob body");
+                            }
                         }
                         result.put("data", Base64.encodeToString(bytes, Base64.NO_WRAP));
                     } else {
                         String responseBody = response.body() != null
                             ? response.body().string()
                             : "";
-                        Log.d(TAG, "Body length=" + responseBody.length());
                         Object parsedData = parseBody(responseBody);
                         if (parsedData instanceof JSONObject) {
                             result.put("data", (JSONObject) parsedData);
@@ -239,10 +216,10 @@ public class PrivacyHttpPlugin extends Plugin {
                     call.resolve(result);
                 }
             } catch (IOException e) {
-                Log.e(TAG, "Network error for " + url + ": " + e.getMessage(), e);
+                if (BuildConfig.DEBUG) Log.e(TAG, "Network error: " + e.getMessage());
                 call.reject(e.getMessage(), "NETWORK_ERROR", e);
             } catch (Exception e) {
-                Log.e(TAG, "Unexpected error for " + url + ": " + e.getMessage(), e);
+                if (BuildConfig.DEBUG) Log.e(TAG, "Unexpected error: " + e.getMessage());
                 call.reject(e.getMessage(), "UNKNOWN_ERROR", e);
             }
         }).start();
@@ -268,6 +245,9 @@ public class PrivacyHttpPlugin extends Plugin {
             return;
         }
 
+        // Sanitize filename to prevent path traversal
+        final String safeFileName = fileName.replaceAll("[^a-zA-Z0-9._-]", "_");
+
         new Thread(() -> {
             try {
                 byte[] bytes = Base64.decode(base64Data, Base64.DEFAULT);
@@ -275,7 +255,7 @@ public class PrivacyHttpPlugin extends Plugin {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     // API 29+ — use MediaStore to write to Downloads
                     ContentValues values = new ContentValues();
-                    values.put(MediaStore.Downloads.DISPLAY_NAME, fileName);
+                    values.put(MediaStore.Downloads.DISPLAY_NAME, safeFileName);
                     values.put(MediaStore.Downloads.MIME_TYPE, mimeType);
                     values.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
 
@@ -296,7 +276,7 @@ public class PrivacyHttpPlugin extends Plugin {
                         os.flush();
                     }
 
-                    Log.d(TAG, "Saved " + fileName + " to Downloads via MediaStore (" + bytes.length + " bytes)");
+                    if (BuildConfig.DEBUG) Log.d(TAG, "Saved " + safeFileName + " to Downloads via MediaStore (" + bytes.length + " bytes)");
                 } else {
                     // API < 29 — write directly to public Downloads folder
                     File downloadsDir = Environment.getExternalStoragePublicDirectory(
@@ -305,21 +285,21 @@ public class PrivacyHttpPlugin extends Plugin {
                     if (!downloadsDir.exists()) {
                         downloadsDir.mkdirs();
                     }
-                    File file = new File(downloadsDir, fileName);
+                    File file = new File(downloadsDir, safeFileName);
                     try (FileOutputStream fos = new FileOutputStream(file)) {
                         fos.write(bytes);
                         fos.flush();
                     }
 
-                    Log.d(TAG, "Saved " + fileName + " to " + file.getAbsolutePath() + " (" + bytes.length + " bytes)");
+                    if (BuildConfig.DEBUG) Log.d(TAG, "Saved " + safeFileName + " (" + bytes.length + " bytes)");
                 }
 
                 JSObject result = new JSObject();
                 result.put("success", true);
-                result.put("fileName", fileName);
+                result.put("fileName", safeFileName);
                 call.resolve(result);
             } catch (Exception e) {
-                Log.e(TAG, "Failed to save to Downloads: " + e.getMessage(), e);
+                if (BuildConfig.DEBUG) Log.e(TAG, "Failed to save to Downloads: " + e.getMessage());
                 call.reject("Failed to save: " + e.getMessage(), "SAVE_ERROR", e);
             }
         }).start();

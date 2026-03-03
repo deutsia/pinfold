@@ -127,7 +127,41 @@ async function applySystemBars(): Promise<void> {
 	}
 }
 
+/**
+ * Validate that a proxy URL uses an allowed scheme and is well-formed.
+ * Allows http:// for .onion/.i2p addresses, requires https:// otherwise.
+ * Returns the validated URL or empty string if invalid.
+ */
+function validateProxyUrl(url: string): string {
+	const trimmed = url.trim();
+	if (!trimmed) return '';
+
+	try {
+		const parsed = new URL(trimmed);
+		const isOnion = parsed.hostname.endsWith('.onion');
+		const isI2P = parsed.hostname.endsWith('.b32.i2p');
+		const isLocalhost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
+
+		// Only allow http/https schemes
+		if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+			return '';
+		}
+
+		// Require https for clearnet, allow http for onion/i2p/localhost
+		if (parsed.protocol === 'http:' && !isOnion && !isI2P && !isLocalhost) {
+			return '';
+		}
+
+		return trimmed;
+	} catch {
+		return '';
+	}
+}
+
 export function updateSettings(updates: Partial<AppSettings>): void {
+	if (updates.proxyUrl !== undefined) {
+		updates.proxyUrl = validateProxyUrl(updates.proxyUrl);
+	}
 	Object.assign(settings, updates);
 	saveSettings();
 	applyTheme();
