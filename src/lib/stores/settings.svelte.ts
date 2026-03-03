@@ -83,6 +83,10 @@ export function loadSettings(): void {
 		const stored = localStorage.getItem('pinfold-settings');
 		if (stored) {
 			const parsed = JSON.parse(stored) as Partial<AppSettings>;
+			// Reject an invalid proxy URL that may have been written by a tampered store.
+			if (parsed.proxyUrl !== undefined && !isValidProxyUrl(parsed.proxyUrl)) {
+				parsed.proxyUrl = '';
+			}
 			settings = { ...defaultSettings, ...parsed };
 		}
 	} catch {
@@ -127,7 +131,26 @@ async function applySystemBars(): Promise<void> {
 	}
 }
 
+/**
+ * Validate that a proxy URL is a well-formed http or https URL.
+ * Rejects javascript:, file:, data: and other non-network schemes.
+ */
+function isValidProxyUrl(url: string): boolean {
+	if (!url) return true; // empty = disabled, always valid
+	try {
+		const parsed = new URL(url);
+		return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+	} catch {
+		return false;
+	}
+}
+
 export function updateSettings(updates: Partial<AppSettings>): void {
+	if ('proxyUrl' in updates && updates.proxyUrl !== undefined) {
+		if (!isValidProxyUrl(updates.proxyUrl)) {
+			throw new Error('Proxy URL must be a valid http or https URL');
+		}
+	}
 	Object.assign(settings, updates);
 	saveSettings();
 	applyTheme();

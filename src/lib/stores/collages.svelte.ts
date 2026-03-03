@@ -130,8 +130,15 @@ export function encodeCollageShare(collage: Collage): string {
 	return btoa(payload).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+export const MAX_COLLAGE_NAME_LENGTH = 200;
+export const MAX_SHARED_PINS = 500;
+// Pinterest pin IDs are numeric strings; reject anything else.
+const PIN_ID_RE = /^\d{1,20}$/;
+
 /**
  * Decode a share string back into a collage name and pin IDs.
+ * Enforces length limits and rejects non-numeric pin IDs to prevent
+ * unexpected API calls with attacker-controlled identifiers.
  */
 export function decodeCollageShare(data: string): { name: string; pinIds: string[] } | null {
 	try {
@@ -139,10 +146,12 @@ export function decodeCollageShare(data: string): { name: string; pinIds: string
 		const json = atob(base64);
 		const parsed = JSON.parse(json);
 		if (typeof parsed.n !== 'string' || !Array.isArray(parsed.p)) return null;
-		return {
-			name: parsed.n,
-			pinIds: parsed.p.map(String)
-		};
+		const name = parsed.n.slice(0, MAX_COLLAGE_NAME_LENGTH);
+		const pinIds = (parsed.p as unknown[])
+			.slice(0, MAX_SHARED_PINS)
+			.map(String)
+			.filter((id) => PIN_ID_RE.test(id));
+		return { name, pinIds };
 	} catch {
 		return null;
 	}

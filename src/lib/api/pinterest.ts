@@ -44,9 +44,7 @@ export async function searchPins(query: string, bookmark?: string): Promise<Sear
 		}
 		const url = `${proxyBase}/search.php?${params}`;
 		const response = await httpGet(url, { skipProxy: true });
-		const result = parseBinternetSearchHtml(response.data as string);
-		console.log(`[Search] proxy search: ${result.pins.length} pins, bookmark=${result.bookmark ? 'yes' : 'no'}, data type=${typeof response.data}, data length=${typeof response.data === 'string' ? response.data.length : 'N/A'}`);
-		return result;
+		return parseBinternetSearchHtml(response.data as string);
 	}
 
 	const options: Record<string, unknown> = {
@@ -185,9 +183,7 @@ export async function getBoardPins(
 		}
 	});
 
-	const result = parseBoardFeedResponse(response.data);
-	console.log(`[Board] ${boardUrl} (id=${id}): ${result.pins.length} pins, bookmark=${result.bookmark ? 'yes' : 'no'}`);
-	return result;
+	return parseBoardFeedResponse(response.data);
 }
 
 /**

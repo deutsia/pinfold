@@ -58,24 +58,35 @@ export async function fetchPaste(key: string): Promise<string> {
 	return typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
 }
 
+// Paste.rs keys are short alphanumeric identifiers (typically 3–6 chars).
+// Restrict to word characters only to prevent URL manipulation via
+// characters like '/', '?', '#', '\r', '\n' in the constructed request URL.
+const PASTE_KEY_RE = /^[\w-]{1,64}$/;
+
 /**
  * Extract the paste key from a full paste.rs URL or return
  * the input as-is if it's already just a key.
+ * Throws if the resulting key contains unsafe characters.
  */
 function extractPasteKey(input: string): string {
 	const trimmed = input.trim();
 
+	let key = trimmed;
 	try {
 		const url = new URL(trimmed);
 		if (url.hostname === 'paste.rs') {
 			const parts = url.pathname.split('/').filter(Boolean);
 			if (parts.length > 0) {
-				return parts[0];
+				key = parts[0];
 			}
 		}
 	} catch {
 		// Not a URL, treat as raw key
 	}
 
-	return trimmed;
+	if (!PASTE_KEY_RE.test(key)) {
+		throw new Error('Invalid paste key format');
+	}
+
+	return key;
 }

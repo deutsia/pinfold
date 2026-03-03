@@ -36,18 +36,28 @@ function getPinterestHeaders(): Record<string, string> {
 
 /**
  * Returns true for .b32.i2p addresses (I2P eepsites).
- * These require routing through the local I2P HTTP proxy (localhost:4444).
+ * Matches on the URL hostname only to avoid false positives from
+ * query parameters or path segments that contain these strings.
  */
 function isI2P(url: string): boolean {
-	return url.includes('.b32.i2p');
+	try {
+		return new URL(url).hostname.endsWith('.b32.i2p');
+	} catch {
+		return false;
+	}
 }
 
 /**
  * Returns true for .onion addresses (Tor hidden services).
- * These require routing through Tor SOCKS5 (localhost:9050).
+ * Matches on the URL hostname only to avoid false positives from
+ * query parameters or path segments that contain these strings.
  */
 function isTor(url: string): boolean {
-	return url.includes('.onion');
+	try {
+		return new URL(url).hostname.endsWith('.onion');
+	} catch {
+		return false;
+	}
 }
 
 /**
@@ -162,5 +172,6 @@ export async function httpPost(
 		assertJsonResponse(response.data, settings.proxyUrl);
 	}
 
+	assertOkStatus(response.status, requestUrl);
 	return { data: response.data, status: response.status, headers: response.headers };
 }

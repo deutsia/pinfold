@@ -8,14 +8,25 @@
 	let themeColor = $state(settings.current.themeColor);
 	let themeMode = $state(settings.current.theme);
 	let showInstances = $state(false);
+	let proxyError = $state<string | null>(null);
 
 	function saveProxy() {
-		settings.update({ proxyUrl: proxyUrl.trim() });
+		try {
+			settings.update({ proxyUrl: proxyUrl.trim() });
+			proxyError = null;
+		} catch (e) {
+			proxyError = e instanceof Error ? e.message : 'Invalid proxy URL';
+		}
 	}
 
 	function selectInstance(url: string) {
 		proxyUrl = url;
-		settings.update({ proxyUrl: url });
+		try {
+			settings.update({ proxyUrl: url });
+			proxyError = null;
+		} catch (e) {
+			proxyError = e instanceof Error ? e.message : 'Invalid proxy URL';
+		}
 		showInstances = false;
 	}
 
@@ -141,6 +152,10 @@
 				Save
 			</button>
 		</div>
+
+		{#if proxyError}
+			<p class="mt-1 text-xs text-error">{proxyError}</p>
+		{/if}
 
 		{#if proxyUrl}
 			<button

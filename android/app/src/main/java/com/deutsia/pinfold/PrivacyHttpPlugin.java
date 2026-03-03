@@ -83,12 +83,22 @@ public class PrivacyHttpPlugin extends Plugin {
         }
     };
 
+    /** Returns true only when the URL *hostname* ends with .b32.i2p. */
     private static boolean isI2P(String url) {
-        return url.contains(".b32.i2p");
+        try {
+            return new java.net.URI(url).getHost().endsWith(".b32.i2p");
+        } catch (Exception e) {
+            return false;
+        }
     }
 
+    /** Returns true only when the URL *hostname* ends with .onion. */
     private static boolean isTor(String url) {
-        return url.contains(".onion");
+        try {
+            return new java.net.URI(url).getHost().endsWith(".onion");
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private OkHttpClient buildClient(String url, boolean followRedirects) {
@@ -268,6 +278,10 @@ public class PrivacyHttpPlugin extends Plugin {
             return;
         }
 
+        // Sanitize fileName: strip any path separators or null bytes to prevent
+        // path traversal on API < 29 where we write via File directly.
+        final String safeFileName = fileName.replaceAll("[/\\\\\\x00]", "_");
+
         new Thread(() -> {
             try {
                 byte[] bytes = Base64.decode(base64Data, Base64.DEFAULT);
@@ -275,7 +289,7 @@ public class PrivacyHttpPlugin extends Plugin {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     // API 29+ — use MediaStore to write to Downloads
                     ContentValues values = new ContentValues();
-                    values.put(MediaStore.Downloads.DISPLAY_NAME, fileName);
+                    values.put(MediaStore.Downloads.DISPLAY_NAME, safeFileName);
                     values.put(MediaStore.Downloads.MIME_TYPE, mimeType);
                     values.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
 
@@ -296,7 +310,7 @@ public class PrivacyHttpPlugin extends Plugin {
                         os.flush();
                     }
 
-                    Log.d(TAG, "Saved " + fileName + " to Downloads via MediaStore (" + bytes.length + " bytes)");
+                    Log.d(TAG, "Saved " + safeFileName + " to Downloads via MediaStore (" + bytes.length + " bytes)");
                 } else {
                     // API < 29 — write directly to public Downloads folder
                     File downloadsDir = Environment.getExternalStoragePublicDirectory(
@@ -305,18 +319,18 @@ public class PrivacyHttpPlugin extends Plugin {
                     if (!downloadsDir.exists()) {
                         downloadsDir.mkdirs();
                     }
-                    File file = new File(downloadsDir, fileName);
+                    File file = new File(downloadsDir, safeFileName);
                     try (FileOutputStream fos = new FileOutputStream(file)) {
                         fos.write(bytes);
                         fos.flush();
                     }
 
-                    Log.d(TAG, "Saved " + fileName + " to " + file.getAbsolutePath() + " (" + bytes.length + " bytes)");
+                    Log.d(TAG, "Saved " + safeFileName + " to " + file.getAbsolutePath() + " (" + bytes.length + " bytes)");
                 }
 
                 JSObject result = new JSObject();
                 result.put("success", true);
-                result.put("fileName", fileName);
+                result.put("fileName", safeFileName);
                 call.resolve(result);
             } catch (Exception e) {
                 Log.e(TAG, "Failed to save to Downloads: " + e.getMessage(), e);

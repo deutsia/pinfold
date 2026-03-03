@@ -4,7 +4,7 @@
 	import MasonryGrid from '$lib/components/MasonryGrid.svelte';
 	import PinCard from '$lib/components/PinCard.svelte';
 	import LoadingGrid from '$lib/components/LoadingGrid.svelte';
-	import { decodeCollageShare, duplicateCollage } from '$lib/stores/collages.svelte.ts';
+	import { decodeCollageShare, duplicateCollage, MAX_COLLAGE_NAME_LENGTH, MAX_SHARED_PINS } from '$lib/stores/collages.svelte.ts';
 	import { fetchPaste } from '$lib/utils/paste.ts';
 	import { getPin } from '$lib/api/pinterest.ts';
 	import type { Pin } from '$lib/api/types.ts';
@@ -50,8 +50,13 @@
 				throw new Error('Invalid collage data format');
 			}
 
-			collageName = parsed.n;
-			const pinIds: string[] = parsed.p.map(String);
+			// Apply the same limits and pin ID validation as decodeCollageShare.
+			const PIN_ID_RE = /^\d{1,20}$/;
+			collageName = parsed.n.slice(0, MAX_COLLAGE_NAME_LENGTH);
+			const pinIds: string[] = (parsed.p as unknown[])
+				.slice(0, MAX_SHARED_PINS)
+				.map(String)
+				.filter((id) => PIN_ID_RE.test(id));
 			totalCount = pinIds.length;
 
 			if (pinIds.length === 0) {
