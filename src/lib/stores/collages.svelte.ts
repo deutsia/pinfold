@@ -31,7 +31,7 @@ function save(): void {
 }
 
 function generateId(): string {
-	return Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
+	return crypto.randomUUID();
 }
 
 const COVER_COLORS = [

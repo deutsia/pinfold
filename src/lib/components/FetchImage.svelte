@@ -71,7 +71,9 @@
 		fetchPromise
 			.then(({ base64, contentType }) => {
 				if (cancelled) return;
-				dataUrl = `data:${contentType};base64,${base64}`;
+				// Validate content type to prevent non-image data URLs
+				const safeType = contentType.startsWith('image/') ? contentType : 'image/jpeg';
+				dataUrl = `data:${safeType};base64,${base64}`;
 				onload?.();
 			})
 			.catch(() => {

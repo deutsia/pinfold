@@ -45,7 +45,9 @@ export async function downloadPinImage(
 	const ext = imageUrl.includes('.png') ? 'png' : 'jpg';
 	const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
 	const suffix = isCarousel && carouselIndex !== undefined ? `_${carouselIndex + 1}` : '';
-	const fileName = `pinfold_${pin.id}${suffix}.${ext}`;
+	// Sanitize pin ID to prevent path traversal in filename
+	const safeId = pin.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+	const fileName = `pinfold_${safeId}${suffix}.${ext}`;
 
 	// Save directly to Downloads folder via native MediaStore API
 	await PrivacyHttp.saveToDownloads({
