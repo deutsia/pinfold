@@ -1,0 +1,38 @@
+{
+	"name": "pinfold",
+	"private": true,
+	"version": "0.1.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"prepare": "svelte-kit sync || echo ''",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"cap:sync": "cap sync",
+		"cap:open": "cap open android"
+	},
+	"devDependencies": {
+		"@sveltejs/adapter-static": "^3.0.0",
+		"@sveltejs/kit": "^2.50.2",
+		"@sveltejs/vite-plugin-svelte": "^6.2.4",
+		"@tailwindcss/vite": "^4.0.0",
+		"svelte": "^5.51.0",
+		"svelte-check": "^4.4.2",
+		"tailwindcss": "^4.0.0",
+		"typescript": "^5.9.3",
+		"vite": "^7.3.1"
+	},
+	"dependencies": {
+		"@capacitor/android": "^6.0.0",
+		"@capacitor/app": "^6.0.3",
+		"@capacitor/cli": "^6.0.0",
+		"@capacitor/core": "^6.0.0",
+		"@capacitor/filesystem": "^6.0.0",
+		"@capacitor/haptics": "^6.0.0",
+		"@capacitor/preferences": "^6.0.0",
+		"@capacitor/share": "^6.0.0",
+		"@capacitor/splash-screen": "^6.0.0",
+		"@capacitor/status-bar": "^6.0.0"
+	}
+}

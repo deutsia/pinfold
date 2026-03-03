@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Pinfold</string>
+    <string name="title_activity_main">Pinfold</string>
+    <string name="package_name">com.deutsia.pinfold</string>
+    <string name="custom_url_scheme">com.deutsia.pinfold</string>
+</resources>

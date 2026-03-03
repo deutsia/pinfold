@@ -1,0 +1,211 @@
+@import 'tailwindcss';
+
+@theme {
+	/* Material You inspired theme — Ocean (default) */
+	--color-primary: oklch(0.75 0.15 250);
+	--color-primary-dim: oklch(0.55 0.12 250);
+	--color-on-primary: oklch(0.20 0.03 250);
+
+	--color-surface: oklch(0.12 0.01 250);
+	--color-surface-container: oklch(0.18 0.015 250);
+	--color-surface-container-high: oklch(0.22 0.02 250);
+	--color-surface-bright: oklch(0.28 0.02 250);
+	--color-on-surface: oklch(0.92 0.01 250);
+	--color-on-surface-dim: oklch(0.65 0.01 250);
+
+	--color-outline: oklch(0.40 0.02 250);
+	--color-outline-dim: oklch(0.28 0.015 250);
+
+	--color-error: oklch(0.70 0.18 25);
+}
+
+/* ===== Theme Color Overrides ===== */
+
+/* Rose */
+[data-theme="rose"] {
+	--color-primary: oklch(0.74 0.16 350);
+	--color-primary-dim: oklch(0.54 0.13 350);
+	--color-on-primary: oklch(0.20 0.04 350);
+	--color-surface: oklch(0.12 0.012 350);
+	--color-surface-container: oklch(0.18 0.018 350);
+	--color-surface-container-high: oklch(0.22 0.022 350);
+	--color-surface-bright: oklch(0.28 0.025 350);
+	--color-outline: oklch(0.40 0.025 350);
+	--color-outline-dim: oklch(0.28 0.018 350);
+}
+
+/* Sage */
+[data-theme="sage"] {
+	--color-primary: oklch(0.74 0.12 155);
+	--color-primary-dim: oklch(0.54 0.10 155);
+	--color-on-primary: oklch(0.20 0.03 155);
+	--color-surface: oklch(0.12 0.012 155);
+	--color-surface-container: oklch(0.18 0.016 155);
+	--color-surface-container-high: oklch(0.22 0.020 155);
+	--color-surface-bright: oklch(0.28 0.023 155);
+	--color-outline: oklch(0.40 0.022 155);
+	--color-outline-dim: oklch(0.28 0.016 155);
+}
+
+/* Amber */
+[data-theme="amber"] {
+	--color-primary: oklch(0.78 0.14 75);
+	--color-primary-dim: oklch(0.58 0.11 75);
+	--color-on-primary: oklch(0.20 0.04 75);
+	--color-surface: oklch(0.13 0.012 75);
+	--color-surface-container: oklch(0.18 0.016 75);
+	--color-surface-container-high: oklch(0.22 0.020 75);
+	--color-surface-bright: oklch(0.28 0.024 75);
+	--color-outline: oklch(0.40 0.022 75);
+	--color-outline-dim: oklch(0.28 0.016 75);
+}
+
+/* Lavender */
+[data-theme="lavender"] {
+	--color-primary: oklch(0.72 0.16 290);
+	--color-primary-dim: oklch(0.52 0.13 290);
+	--color-on-primary: oklch(0.20 0.04 290);
+	--color-surface: oklch(0.12 0.014 290);
+	--color-surface-container: oklch(0.18 0.018 290);
+	--color-surface-container-high: oklch(0.22 0.022 290);
+	--color-surface-bright: oklch(0.28 0.025 290);
+	--color-outline: oklch(0.40 0.024 290);
+	--color-outline-dim: oklch(0.28 0.018 290);
+}
+
+/* Sunset */
+[data-theme="sunset"] {
+	--color-primary: oklch(0.75 0.16 30);
+	--color-primary-dim: oklch(0.55 0.13 30);
+	--color-on-primary: oklch(0.20 0.04 30);
+	--color-surface: oklch(0.13 0.014 30);
+	--color-surface-container: oklch(0.18 0.018 30);
+	--color-surface-container-high: oklch(0.22 0.022 30);
+	--color-surface-bright: oklch(0.28 0.025 30);
+	--color-outline: oklch(0.40 0.024 30);
+	--color-outline-dim: oklch(0.28 0.018 30);
+}
+
+/* ===== Light Mode Overrides ===== */
+
+[data-mode="light"] {
+	--color-on-primary: oklch(1.00 0.00 0);
+	--color-surface: oklch(0.97 0.005 250);
+	--color-surface-container: oklch(0.94 0.008 250);
+	--color-surface-container-high: oklch(0.91 0.010 250);
+	--color-surface-bright: oklch(0.88 0.012 250);
+	--color-on-surface: oklch(0.15 0.01 250);
+	--color-on-surface-dim: oklch(0.45 0.01 250);
+	--color-outline: oklch(0.65 0.015 250);
+	--color-outline-dim: oklch(0.80 0.010 250);
+	--color-error: oklch(0.55 0.22 25);
+}
+
+[data-mode="light"][data-theme="rose"] {
+	--color-primary: oklch(0.58 0.20 350);
+	--color-surface: oklch(0.97 0.006 350);
+	--color-surface-container: oklch(0.94 0.009 350);
+	--color-surface-container-high: oklch(0.91 0.012 350);
+	--color-surface-bright: oklch(0.88 0.014 350);
+	--color-on-surface: oklch(0.15 0.01 350);
+	--color-on-surface-dim: oklch(0.45 0.01 350);
+	--color-outline: oklch(0.65 0.015 350);
+	--color-outline-dim: oklch(0.80 0.010 350);
+}
+
+[data-mode="light"][data-theme="sage"] {
+	--color-primary: oklch(0.55 0.14 155);
+	--color-surface: oklch(0.97 0.006 155);
+	--color-surface-container: oklch(0.94 0.009 155);
+	--color-surface-container-high: oklch(0.91 0.012 155);
+	--color-surface-bright: oklch(0.88 0.014 155);
+	--color-on-surface: oklch(0.15 0.01 155);
+	--color-on-surface-dim: oklch(0.45 0.01 155);
+	--color-outline: oklch(0.65 0.015 155);
+	--color-outline-dim: oklch(0.80 0.010 155);
+}
+
+[data-mode="light"][data-theme="amber"] {
+	--color-primary: oklch(0.60 0.17 75);
+	--color-surface: oklch(0.97 0.006 75);
+	--color-surface-container: oklch(0.94 0.009 75);
+	--color-surface-container-high: oklch(0.91 0.012 75);
+	--color-surface-bright: oklch(0.88 0.014 75);
+	--color-on-surface: oklch(0.15 0.01 75);
+	--color-on-surface-dim: oklch(0.45 0.01 75);
+	--color-outline: oklch(0.65 0.015 75);
+	--color-outline-dim: oklch(0.80 0.010 75);
+}
+
+[data-mode="light"][data-theme="lavender"] {
+	--color-primary: oklch(0.55 0.20 290);
+	--color-surface: oklch(0.97 0.006 290);
+	--color-surface-container: oklch(0.94 0.009 290);
+	--color-surface-container-high: oklch(0.91 0.012 290);
+	--color-surface-bright: oklch(0.88 0.014 290);
+	--color-on-surface: oklch(0.15 0.01 290);
+	--color-on-surface-dim: oklch(0.45 0.01 290);
+	--color-outline: oklch(0.65 0.015 290);
+	--color-outline-dim: oklch(0.80 0.010 290);
+}
+
+[data-mode="light"][data-theme="sunset"] {
+	--color-primary: oklch(0.58 0.20 30);
+	--color-surface: oklch(0.97 0.006 30);
+	--color-surface-container: oklch(0.94 0.009 30);
+	--color-surface-container-high: oklch(0.91 0.012 30);
+	--color-surface-bright: oklch(0.88 0.014 30);
+	--color-on-surface: oklch(0.15 0.01 30);
+	--color-on-surface-dim: oklch(0.45 0.01 30);
+	--color-outline: oklch(0.65 0.015 30);
+	--color-outline-dim: oklch(0.80 0.010 30);
+}
+
+/* ===== Light mode for Ocean (default) ===== */
+[data-mode="light"][data-theme="ocean"],
+[data-mode="light"]:not([data-theme]) {
+	--color-primary: oklch(0.55 0.20 250);
+}
+
+/* ===== Base styles ===== */
+html, body {
+	height: 100%;
+	overflow: hidden;
+}
+
+body {
+	font-family: system-ui, -apple-system, sans-serif;
+	background-color: var(--color-surface);
+	color: var(--color-on-surface);
+	-webkit-tap-highlight-color: transparent;
+	-webkit-font-smoothing: antialiased;
+	transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Safe area handling for Android notch/navbar */
+.safe-top {
+	padding-top: env(safe-area-inset-top);
+}
+
+.safe-bottom {
+	padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Hide scrollbar on horizontal carousels */
+.snap-x::-webkit-scrollbar {
+	display: none;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+	width: 4px;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--color-outline-dim);
+	border-radius: 2px;
+}
