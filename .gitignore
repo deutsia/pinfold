@@ -1,0 +1,3 @@
+*.jks
+node_modules/
+.svelte-kit/
