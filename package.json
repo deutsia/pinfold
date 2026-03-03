@@ -23,6 +23,10 @@
 		"typescript": "^5.9.3",
 		"vite": "^7.3.1"
 	},
+	"overrides": {
+		"cookie": ">=0.7.0",
+		"tar": ">=7.5.8"
+	},
 	"dependencies": {
 		"@capacitor/android": "^6.0.0",
 		"@capacitor/app": "^6.0.3",
