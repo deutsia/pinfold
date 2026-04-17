@@ -3,14 +3,18 @@
 	import { selectImageSize } from '$lib/api/image-proxy.ts';
 	import { downloadPinImage } from '$lib/utils/download.ts';
 	import { isFavorited, toggleFavorite } from '$lib/stores/favorites.svelte.ts';
+	import { hidePin, hidePinner, isSeen } from '$lib/stores/follows.svelte.ts';
 	import FetchImage from './FetchImage.svelte';
 
 	interface Props {
 		pin: Pin;
 		onclick?: () => void;
+		onremove?: () => void;
+		showSeenOverlay?: boolean;
+		extraMenu?: { label: string; danger?: boolean; onclick: () => void }[];
 	}
 
-	let { pin, onclick }: Props = $props();
+	let { pin, onclick, onremove, showSeenOverlay = false, extraMenu = [] }: Props = $props();
 
 	let imageLoaded = $state(false);
 	let imageError = $state(false);
@@ -20,6 +24,7 @@
 	let saving = $state(false);
 	let saveStatus = $state<'idle' | 'success' | 'error'>('idle');
 	let favorited = $state(isFavorited(pin.id));
+	let seen = $derived(showSeenOverlay && isSeen(pin.id));
 
 	const imgSrc = $derived(selectImageSize(pin.images, 'grid'));
 	const isCarousel = $derived(pin.carouselImages.length > 1);
@@ -86,6 +91,20 @@
 		showMenu = false;
 	}
 
+	function handleHidePin() {
+		showMenu = false;
+		hidePin(pin.id);
+		onremove?.();
+	}
+
+	function handleHidePinner() {
+		showMenu = false;
+		if (pin.pinner.username) {
+			hidePinner(pin.pinner.username);
+			onremove?.();
+		}
+	}
+
 	async function handleSaveImage() {
 		if (saving) return;
 		saving = true;
@@ -105,7 +124,7 @@
 	}
 </script>
 
-<div class="relative w-full overflow-hidden rounded-2xl bg-surface-container break-inside-avoid">
+<div class="relative w-full overflow-hidden rounded-2xl bg-surface-container break-inside-avoid {seen ? 'opacity-60' : ''}">
 	{#if isCarousel}
 		<!-- Carousel: horizontal scroll with snap -->
 		<div
@@ -282,10 +301,46 @@
 				{:else}
 					<svg class="h-5 w-5 text-on-surface-dim" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 						<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-					</svg>
+				</svg>
 					<span>Add to favorites</span>
 				{/if}
 			</button>
+
+			<button
+				onclick={handleHidePin}
+				class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left hover:bg-surface-container-high active:bg-surface-container-high"
+			>
+				<svg class="h-5 w-5 text-on-surface-dim" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+					<path d="M17.94 17.94A10 10 0 0 1 12 20c-7 0-10-8-10-8a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A10 10 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+					<path d="M1 1l22 22" />
+				</svg>
+				<span>Hide this pin</span>
+			</button>
+
+			{#if pin.pinner.username}
+				<button
+					onclick={handleHidePinner}
+					class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left hover:bg-surface-container-high active:bg-surface-container-high"
+				>
+					<svg class="h-5 w-5 text-on-surface-dim" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<circle cx="12" cy="12" r="10" />
+						<path d="M4.93 4.93l14.14 14.14" />
+					</svg>
+					<span>Block @{pin.pinner.username}</span>
+				</button>
+			{/if}
+
+			{#each extraMenu as item}
+				<button
+					onclick={() => { showMenu = false; item.onclick(); }}
+					class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left hover:bg-surface-container-high active:bg-surface-container-high {item.danger ? 'text-error' : ''}"
+				>
+					<svg class="h-5 w-5 {item.danger ? 'text-error' : 'text-on-surface-dim'}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+					</svg>
+					<span>{item.label}</span>
+				</button>
+			{/each}
 
 			<button
 				onclick={closeMenu}

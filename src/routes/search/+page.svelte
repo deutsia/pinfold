@@ -8,10 +8,24 @@
 	import LoadingGrid from '$lib/components/LoadingGrid.svelte';
 	import { searchPins } from '$lib/api/pinterest.ts';
 	import { addToHistory } from '$lib/stores/search.svelte.ts';
+	import { useFollows } from '$lib/stores/follows.svelte.ts';
 	import { parsePinterestUrl } from '$lib/utils/url-parser.ts';
 	import type { Pin } from '$lib/api/types.ts';
 
+	const follows = useFollows();
+
 	let query = $derived(page.url.searchParams.get('q') || '');
+	let topicFollowed = $derived(!!query && follows.isTopicFollowed(query));
+
+	function toggleFollowTopic() {
+		if (!query) return;
+		if (follows.isTopicFollowed(query)) {
+			follows.unfollowTopic(query);
+		} else {
+			follows.followTopic(query);
+		}
+	}
+
 	let pins = $state<Pin[]>([]);
 	let bookmark = $state<string | null>(null);
 	let loading = $state(false);
@@ -126,6 +140,28 @@
 	<!-- Search bar -->
 	<div class="sticky top-0 z-10 bg-surface/95 px-4 pt-4 pb-3 backdrop-blur-sm">
 		<SearchBar bind:value={searchInput} onsubmit={handleNewSearch} />
+		{#if query}
+			<div class="mt-2 flex justify-end">
+				<button
+					onclick={toggleFollowTopic}
+					class="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors {topicFollowed
+						? 'bg-surface-container-high text-on-surface'
+						: 'bg-primary text-on-primary'}"
+				>
+					{#if topicFollowed}
+						<svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+							<path d="M5 13l4 4L19 7" />
+						</svg>
+						Following #{query}
+					{:else}
+						<svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+							<path d="M12 5v14M5 12h14" />
+						</svg>
+						Follow #{query}
+					{/if}
+				</button>
+			</div>
+		{/if}
 	</div>
 
 	<div class="px-4">

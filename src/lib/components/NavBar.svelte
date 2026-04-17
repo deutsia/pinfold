@@ -9,6 +9,12 @@
 			match: (path: string) => path === '/' || path.startsWith('/search')
 		},
 		{
+			label: 'Feed',
+			href: '/feed',
+			icon: 'feed',
+			match: (path: string) => path.startsWith('/feed')
+		},
+		{
 			label: 'Favorites',
 			href: '/favorites',
 			icon: 'heart',
@@ -45,6 +51,11 @@
 					<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 						<circle cx="11" cy="11" r="8" />
 						<path d="m21 21-4.3-4.3" />
+					</svg>
+				{:else if tab.icon === 'feed'}
+					<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16" />
+						<circle cx="5" cy="19" r="1" fill={active ? 'currentColor' : 'none'} />
 					</svg>
 				{:else if tab.icon === 'heart'}
 					<svg class="h-6 w-6" fill={active ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

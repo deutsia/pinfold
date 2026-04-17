@@ -6,6 +6,8 @@
 	import PinCard from '$lib/components/PinCard.svelte';
 	import LoadingGrid from '$lib/components/LoadingGrid.svelte';
 	import { getPin, getRelatedPins } from '$lib/api/pinterest.ts';
+	import { addToHistory } from '$lib/stores/history.svelte.ts';
+	import { markSeen } from '$lib/stores/follows.svelte.ts';
 	import type { Pin } from '$lib/api/types.ts';
 
 	let pinId = $derived(page.params.id);
@@ -33,6 +35,10 @@
 			]);
 			pin = pinData;
 			relatedPins = related.pins;
+			if (pinData) {
+				addToHistory(pinData);
+				markSeen(pinData.id);
+			}
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to load pin';
 		} finally {

@@ -1,8 +1,13 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { useSettings, THEME_COLORS, PROXY_INSTANCES } from '$lib/stores/settings.svelte.ts';
 	import type { ThemeColor, ThemeMode } from '$lib/stores/settings.svelte.ts';
+	import { useFollows } from '$lib/stores/follows.svelte.ts';
+	import { useHistory } from '$lib/stores/history.svelte.ts';
 
 	const settings = useSettings();
+	const follows = useFollows();
+	const history = useHistory();
 
 	let proxyUrl = $state(settings.current.proxyUrl);
 	let themeColor = $state(settings.current.themeColor);
@@ -61,6 +66,61 @@
 		} catch {
 			// Clipboard API unavailable — ignore
 		}
+	}
+
+	// ===== Subscriptions & data management =====
+	let importError = $state<string | null>(null);
+	let importStatus = $state<string | null>(null);
+
+	function exportSubscriptions() {
+		try {
+			const data = follows.exportFollows();
+			const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = `pinfold-subscriptions-${new Date().toISOString().slice(0, 10)}.json`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+			importStatus = 'Exported';
+			setTimeout(() => { importStatus = null; }, 2000);
+		} catch {
+			importError = 'Failed to export';
+			setTimeout(() => { importError = null; }, 3000);
+		}
+	}
+
+	function triggerImport() {
+		const input = document.createElement('input');
+		input.type = 'file';
+		input.accept = 'application/json,.json';
+		input.onchange = async () => {
+			const file = input.files?.[0];
+			if (!file) return;
+			try {
+				const text = await file.text();
+				const data = JSON.parse(text);
+				follows.importFollows(data, 'merge');
+				importStatus = `Imported ${(data.users?.length || 0) + (data.topics?.length || 0) + (data.boards?.length || 0)} items`;
+				setTimeout(() => { importStatus = null; }, 3000);
+			} catch {
+				importError = 'Invalid JSON file';
+				setTimeout(() => { importError = null; }, 3000);
+			}
+		};
+		input.click();
+	}
+
+	function clearSeenHistory() {
+		if (confirm('Clear "seen" markers? Pins you opened will no longer appear faded in the feed.')) {
+			follows.clearSeen();
+		}
+	}
+
+	function unhidePinner(username: string) {
+		follows.unhidePinner(username);
 	}
 </script>
 
@@ -243,6 +303,99 @@
 			<p class="mt-1 text-xs text-on-surface-dim">
 				Tor requires a local SOCKS5 proxy on port 9050 (e.g. Orbot, InviZible Pro). I2P requires a local HTTP proxy on port 4444 (e.g. I2Pd, InviZible Pro). VPN mode is not required.
 			</p>
+		{/if}
+	</section>
+
+	<!-- Your Data / History -->
+	<section class="mb-8">
+		<h2 class="mb-1 text-lg font-semibold">Your Data</h2>
+		<p class="mb-3 text-sm text-on-surface-dim">Everything below is stored only on this device.</p>
+
+		<div class="flex flex-col gap-2">
+			<button
+				onclick={() => goto('/history')}
+				class="flex items-center justify-between rounded-xl bg-surface-container px-4 py-3 text-left hover:bg-surface-container-high"
+			>
+				<div class="flex items-center gap-3">
+					<svg class="h-5 w-5 text-on-surface-dim" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<circle cx="12" cy="12" r="10" />
+						<path d="M12 6v6l4 2" />
+					</svg>
+					<div>
+						<p class="text-sm font-medium">View history</p>
+						<p class="text-xs text-on-surface-dim">{history.count} pin{history.count === 1 ? '' : 's'}</p>
+					</div>
+				</div>
+				<svg class="h-4 w-4 text-on-surface-dim" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+					<path d="m9 18 6-6-6-6" />
+				</svg>
+			</button>
+
+			<button
+				onclick={clearSeenHistory}
+				class="flex items-center gap-3 rounded-xl bg-surface-container px-4 py-3 text-left hover:bg-surface-container-high"
+			>
+				<svg class="h-5 w-5 text-on-surface-dim" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+					<path d="M17.94 17.94A10 10 0 0 1 12 20c-7 0-10-8-10-8a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A10 10 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+					<path d="M1 1l22 22" />
+				</svg>
+				<div>
+					<p class="text-sm font-medium">Clear "seen" markers</p>
+					<p class="text-xs text-on-surface-dim">Un-fades pins in Feed that you've already opened</p>
+				</div>
+			</button>
+		</div>
+	</section>
+
+	<!-- Subscriptions -->
+	<section class="mb-8">
+		<h2 class="mb-1 text-lg font-semibold">Subscriptions</h2>
+		<p class="mb-3 text-sm text-on-surface-dim">
+			{follows.users.length} user{follows.users.length === 1 ? '' : 's'},
+			{follows.topics.length} topic{follows.topics.length === 1 ? '' : 's'},
+			{follows.boards.length} board{follows.boards.length === 1 ? '' : 's'}
+		</p>
+
+		<div class="flex flex-wrap gap-2">
+			<button
+				onclick={exportSubscriptions}
+				class="rounded-xl bg-surface-container-high px-4 py-2 text-sm font-medium hover:bg-surface-bright"
+			>
+				Export as JSON
+			</button>
+			<button
+				onclick={triggerImport}
+				class="rounded-xl bg-surface-container-high px-4 py-2 text-sm font-medium hover:bg-surface-bright"
+			>
+				Import JSON
+			</button>
+		</div>
+
+		{#if importStatus}
+			<p class="mt-2 text-xs text-green-400">{importStatus}</p>
+		{/if}
+		{#if importError}
+			<p class="mt-2 text-xs text-error">{importError}</p>
+		{/if}
+
+		{#if follows.hiddenPinners.length > 0}
+			<div class="mt-4 rounded-xl bg-surface-container p-3">
+				<p class="mb-2 text-xs font-medium text-on-surface-dim">
+					Blocked pinners ({follows.hiddenPinners.length})
+				</p>
+				<div class="flex flex-wrap gap-1.5">
+					{#each follows.hiddenPinners as username (username)}
+						<button
+							onclick={() => unhidePinner(username)}
+							class="flex items-center gap-1 rounded-full bg-surface-container-high px-2.5 py-1 text-xs hover:bg-surface-bright"
+							title="Unblock {username}"
+						>
+							<span>@{username}</span>
+							<span class="text-error">×</span>
+						</button>
+					{/each}
+				</div>
+			</div>
 		{/if}
 	</section>
 
