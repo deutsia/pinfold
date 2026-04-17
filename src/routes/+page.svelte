@@ -30,8 +30,10 @@
 	let dragX = $state(0);
 	let dragY = $state(0);
 	let dragOverTrash = $state(false);
+	let dragOverSearch = $state(false);
 
 	let trashEl: HTMLDivElement | undefined = $state();
+	let searchBarEl: HTMLDivElement | undefined = $state();
 	let pressTimer: ReturnType<typeof setTimeout> | null = null;
 	let activeItem: string | null = null;
 	let startX = 0;
@@ -94,6 +96,18 @@
 				if (over) Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
 			}
 		}
+		if (searchBarEl) {
+			const rect = searchBarEl.getBoundingClientRect();
+			const over =
+				x >= rect.left &&
+				x <= rect.right &&
+				y >= rect.top &&
+				y <= rect.bottom;
+			if (over !== dragOverSearch) {
+				dragOverSearch = over;
+				if (over) Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
+			}
+		}
 	}
 
 	function endPress() {
@@ -101,9 +115,19 @@
 		if (dragging && dragOverTrash) {
 			searchHistory.remove(dragging);
 			Haptics.impact({ style: ImpactStyle.Heavy }).catch(() => {});
+		} else if (dragging && dragOverSearch) {
+			const term = dragging;
+			Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
+			dragging = null;
+			dragOverTrash = false;
+			dragOverSearch = false;
+			activeItem = null;
+			searchFromHistory(term);
+			return;
 		}
 		dragging = null;
 		dragOverTrash = false;
+		dragOverSearch = false;
 		activeItem = null;
 	}
 
@@ -142,7 +166,14 @@
 		</div>
 
 		<!-- Search -->
-		<SearchBar bind:value={query} onsubmit={handleSearch} autofocus />
+		<div
+			bind:this={searchBarEl}
+			class="rounded-full transition-all {dragging && dragOverSearch
+				? 'ring-4 ring-primary ring-offset-2 ring-offset-surface'
+				: ''}"
+		>
+			<SearchBar bind:value={query} onsubmit={handleSearch} autofocus />
+		</div>
 
 		<!-- Search History -->
 		{#if searchHistory.history.length > 0}
@@ -156,9 +187,6 @@
 						Clear all
 					</button>
 				</div>
-				<p class="mb-2 text-[11px] text-on-surface-dim/80">
-					Tip: long-press and drag to the trash to delete a single search.
-				</p>
 				<div class="flex flex-wrap gap-2">
 					{#each searchHistory.history as item (item)}
 						<button
@@ -167,7 +195,8 @@
 							onpointerdown={(e) => {
 								if (e.pointerType === 'mouse') startPress(item, e);
 							}}
-							class="touch-none rounded-full bg-surface-container-high px-3 py-1.5 text-sm text-on-surface transition-all
+							oncontextmenu={(e) => e.preventDefault()}
+							class="touch-none rounded-full bg-surface-container-high px-3 py-1.5 text-sm text-on-surface transition-all select-none [-webkit-user-select:none] [-webkit-touch-callout:none]
 								{dragging === item ? 'invisible' : 'hover:bg-surface-bright'}"
 						>
 							{item}
