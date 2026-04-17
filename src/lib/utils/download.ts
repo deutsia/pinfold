@@ -56,3 +56,40 @@ export async function downloadPinImage(
 		mimeType
 	});
 }
+
+/**
+ * Fetch the full-size image for a pin and copy it to the system clipboard.
+ */
+export async function copyPinImageToClipboard(
+	pin: Pin,
+	carouselIndex?: number
+): Promise<void> {
+	const isCarousel = pin.carouselImages.length > 1;
+	const images =
+		isCarousel && carouselIndex !== undefined
+			? pin.carouselImages[carouselIndex]
+			: pin.images;
+
+	const imageUrl = selectImageSize(images, 'full');
+	const needsProxy = imageUrl.includes('.b32.i2p') || imageUrl.includes('.onion');
+
+	const response = needsProxy
+		? await PrivacyHttp.request({
+				url: imageUrl,
+				method: 'GET',
+				headers: DL_HEADERS,
+				responseType: 'blob'
+			})
+		: await CapacitorHttp.get({
+				url: imageUrl,
+				headers: DL_HEADERS,
+				responseType: 'blob'
+			});
+
+	const mimeType = imageUrl.includes('.png') ? 'image/png' : 'image/jpeg';
+
+	await PrivacyHttp.copyImageToClipboard({
+		data: response.data as string,
+		mimeType
+	});
+}

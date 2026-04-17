@@ -5,7 +5,10 @@
 	import PinCard from '$lib/components/PinCard.svelte';
 	import LoadingGrid from '$lib/components/LoadingGrid.svelte';
 	import { getBoardPins } from '$lib/api/pinterest.ts';
+	import { useFollows } from '$lib/stores/follows.svelte.ts';
 	import type { Pin } from '$lib/api/types.ts';
+
+	const follows = useFollows();
 
 	let slug = $derived(page.params.slug);
 	let boardId = $derived(page.url.searchParams.get('id') || undefined);
@@ -36,6 +39,23 @@
 			error = e instanceof Error ? e.message : 'Failed to load board';
 		} finally {
 			loading = false;
+		}
+	}
+
+	let followed = $derived(!!slug && follows.isBoardFollowed(slug));
+
+	function toggleFollowBoard() {
+		if (!slug) return;
+		if (follows.isBoardFollowed(slug)) {
+			follows.unfollowBoard(slug);
+		} else {
+			follows.followBoard({
+				slug,
+				id: boardId,
+				name: slug.split('/').pop() || slug,
+				owner: slug.split('/')[0],
+				addedAt: Date.now()
+			});
 		}
 	}
 
@@ -70,7 +90,27 @@
 		Back
 	</button>
 
-	<h1 class="mb-4 text-2xl font-bold">{slug.split('/').pop() || 'Board'}</h1>
+	<div class="mb-4 flex items-center justify-between gap-3">
+		<h1 class="text-2xl font-bold">{slug.split('/').pop() || 'Board'}</h1>
+		<button
+			onclick={toggleFollowBoard}
+			class="flex shrink-0 items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors {followed
+				? 'bg-surface-container-high text-on-surface hover:bg-surface-bright'
+				: 'bg-primary text-on-primary'}"
+		>
+			{#if followed}
+				<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+					<path d="M5 13l4 4L19 7" />
+				</svg>
+				Following
+			{:else}
+				<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+					<path d="M12 5v14M5 12h14" />
+				</svg>
+				Follow
+			{/if}
+		</button>
+	</div>
 
 	{#if loading}
 		<LoadingGrid />

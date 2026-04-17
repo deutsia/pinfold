@@ -58,6 +58,14 @@ export function clearHistory(): void {
 }
 
 /**
+ * Remove a single query from search history.
+ */
+export function removeFromHistory(query: string): void {
+	searchState.history = searchState.history.filter((q) => q !== query);
+	save();
+}
+
+/**
  * Get the search store for reactive access.
  */
 export function useSearchHistory() {
@@ -67,6 +75,7 @@ export function useSearchHistory() {
 			return searchState.history;
 		},
 		add: addToHistory,
+		remove: removeFromHistory,
 		clear: clearHistory
 	};
 }

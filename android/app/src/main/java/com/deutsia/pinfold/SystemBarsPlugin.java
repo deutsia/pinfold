@@ -23,24 +23,44 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 public class SystemBarsPlugin extends Plugin {
 
     private Boolean lastIsDark = null;
+    private Integer lastStatusColor = null;
+    private Integer lastNavColor = null;
 
     @PluginMethod
     public void setStyle(final PluginCall call) {
         boolean isDark = Boolean.TRUE.equals(call.getBoolean("isDark", true));
+        String statusColorStr = call.getString("statusBarColor");
+        String navColorStr = call.getString("navigationBarColor");
+
+        int defaultColor = Color.parseColor(isDark ? "#000000" : "#f5f5f5");
+        int statusColor = parseColorOrDefault(statusColorStr, defaultColor);
+        int navColor = parseColorOrDefault(navColorStr, defaultColor);
+
         lastIsDark = isDark;
-        applyStyle(isDark);
+        lastStatusColor = statusColor;
+        lastNavColor = navColor;
+        applyStyle(isDark, statusColor, navColor);
         call.resolve();
     }
 
     @Override
     protected void handleOnResume() {
         super.handleOnResume();
-        if (lastIsDark != null) {
-            applyStyle(lastIsDark);
+        if (lastIsDark != null && lastStatusColor != null && lastNavColor != null) {
+            applyStyle(lastIsDark, lastStatusColor, lastNavColor);
         }
     }
 
-    private void applyStyle(boolean isDark) {
+    private static int parseColorOrDefault(String raw, int fallback) {
+        if (raw == null || raw.isEmpty()) return fallback;
+        try {
+            return Color.parseColor(raw);
+        } catch (IllegalArgumentException e) {
+            return fallback;
+        }
+    }
+
+    private void applyStyle(boolean isDark, int statusColor, int navColor) {
         getActivity().runOnUiThread(() -> {
             Window window = getActivity().getWindow();
             WindowInsetsControllerCompat controller =
@@ -51,8 +71,8 @@ public class SystemBarsPlugin extends Plugin {
             controller.setAppearanceLightStatusBars(!isDark);
             controller.setAppearanceLightNavigationBars(!isDark);
 
-            window.setStatusBarColor(Color.parseColor(isDark ? "#000000" : "#f5f5f5"));
-            window.setNavigationBarColor(Color.parseColor(isDark ? "#000000" : "#f5f5f5"));
+            window.setStatusBarColor(statusColor);
+            window.setNavigationBarColor(navColor);
         });
     }
 }

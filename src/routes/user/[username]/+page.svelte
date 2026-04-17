@@ -7,10 +7,29 @@
 	import BoardCard from '$lib/components/BoardCard.svelte';
 	import LoadingGrid from '$lib/components/LoadingGrid.svelte';
 	import { getUserProfile, getUserPins, getUserBoards } from '$lib/api/pinterest.ts';
+	import { useFollows } from '$lib/stores/follows.svelte.ts';
 	import type { Pin, UserProfile, Board } from '$lib/api/types.ts';
+
+	const follows = useFollows();
 
 	let username = $derived(page.params.username);
 	let user = $state<UserProfile | null>(null);
+	let followed = $derived(!!username && follows.isUserFollowed(username));
+
+	function toggleFollow() {
+		if (!username || !user) return;
+		if (follows.isUserFollowed(username)) {
+			follows.unfollowUser(username);
+		} else {
+			follows.followUser({
+				username,
+				fullName: user.fullName,
+				avatarUrl: user.avatarUrl,
+				addedAt: Date.now()
+			});
+		}
+	}
+
 	let pins = $state<Pin[]>([]);
 	let pinsBookmark = $state<string | null>(null);
 	let boards = $state<Board[]>([]);
@@ -147,6 +166,26 @@
 	{:else}
 		{#if user}
 			<UserCard {user} />
+			<div class="mt-2 flex justify-center">
+				<button
+					onclick={toggleFollow}
+					class="flex items-center gap-2 rounded-full px-5 py-2 text-sm font-medium transition-colors {followed
+						? 'bg-surface-container-high text-on-surface hover:bg-surface-bright'
+						: 'bg-primary text-on-primary'}"
+				>
+					{#if followed}
+						<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+							<path d="M5 13l4 4L19 7" />
+						</svg>
+						Following
+					{:else}
+						<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+							<path d="M12 5v14M5 12h14" />
+						</svg>
+						Follow
+					{/if}
+				</button>
+			</div>
 		{/if}
 
 		<!-- Tabs -->
