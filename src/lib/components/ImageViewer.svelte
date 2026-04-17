@@ -1,13 +1,15 @@
 <script lang="ts">
 	import FetchImage from './FetchImage.svelte';
+	import { longpress } from '$lib/utils/long-press.ts';
 
 	interface Props {
 		src: string;
 		alt?: string;
 		onclose: () => void;
+		onlongpress?: () => void;
 	}
 
-	let { src, alt = 'Full size image', onclose }: Props = $props();
+	let { src, alt = 'Full size image', onclose, onlongpress }: Props = $props();
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape') onclose();
@@ -35,9 +37,19 @@
 		</svg>
 	</button>
 
-	<FetchImage
-		{src}
-		{alt}
-		class="max-h-[90vh] max-w-[95vw] object-contain"
-	/>
+	{#if onlongpress}
+		<div use:longpress={{ onLongPress: onlongpress }}>
+			<FetchImage
+				{src}
+				{alt}
+				class="max-h-[90vh] max-w-[95vw] object-contain"
+			/>
+		</div>
+	{:else}
+		<FetchImage
+			{src}
+			{alt}
+			class="max-h-[90vh] max-w-[95vw] object-contain"
+		/>
+	{/if}
 </div>

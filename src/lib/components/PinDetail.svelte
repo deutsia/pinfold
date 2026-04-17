@@ -2,7 +2,8 @@
 	import type { Pin } from '$lib/api/types.ts';
 	import { selectImageSize } from '$lib/api/image-proxy.ts';
 	import { toggleFavorite, isFavorited } from '$lib/stores/favorites.svelte.ts';
-	import { downloadPinImage } from '$lib/utils/download.ts';
+	import { downloadPinImage, copyPinImageToClipboard } from '$lib/utils/download.ts';
+	import { longpress } from '$lib/utils/long-press.ts';
 	import { Share } from '@capacitor/share';
 	import FetchImage from './FetchImage.svelte';
 	import ImageViewer from './ImageViewer.svelte';
@@ -21,6 +22,7 @@
 	let scrollContainer: HTMLDivElement | undefined = $state();
 	let downloading = $state(false);
 	let downloadStatus = $state<'idle' | 'success' | 'error'>('idle');
+	let copyStatus = $state<'idle' | 'copying' | 'success' | 'error'>('idle');
 
 	const detailSrc = $derived(selectImageSize(pin.images, 'detail'));
 	const fullSrc = $derived(selectImageSize(pin.images, 'full'));
@@ -62,6 +64,19 @@
 		}
 	}
 
+	async function handleCopyImage() {
+		if (copyStatus === 'copying') return;
+		copyStatus = 'copying';
+		try {
+			await copyPinImageToClipboard(pin, isCarousel ? currentSlide : undefined);
+			copyStatus = 'success';
+			setTimeout(() => { copyStatus = 'idle'; }, 1800);
+		} catch {
+			copyStatus = 'error';
+			setTimeout(() => { copyStatus = 'idle'; }, 1800);
+		}
+	}
+
 	async function handleShare() {
 		const url = `https://pinterest.com/pin/${pin.id}/`;
 		try {
@@ -89,6 +104,7 @@
 					<button
 						class="w-full flex-shrink-0 snap-center cursor-zoom-in"
 						onclick={() => { currentSlide = i; showFullImage = true; }}
+						use:longpress={{ onLongPress: () => { currentSlide = i; handleCopyImage(); } }}
 					>
 						<FetchImage
 							src={selectImageSize(slideImages, 'detail')}
@@ -119,6 +135,7 @@
 		<button
 			class="w-full cursor-zoom-in"
 			onclick={() => (showFullImage = true)}
+			use:longpress={{ onLongPress: handleCopyImage }}
 		>
 			<FetchImage
 				src={detailSrc}
@@ -243,9 +260,34 @@
 </div>
 
 {#if showFullImage}
-	<ImageViewer src={viewerSrc} alt={pin.title || pin.description} onclose={() => (showFullImage = false)} />
+	<ImageViewer
+		src={viewerSrc}
+		alt={pin.title || pin.description}
+		onclose={() => (showFullImage = false)}
+		onlongpress={handleCopyImage}
+	/>
 {/if}
 
 {#if showCollageModal}
 	<AddToCollageModal {pin} onclose={() => (showCollageModal = false)} />
+{/if}
+
+{#if copyStatus !== 'idle'}
+	<div class="pointer-events-none fixed inset-x-0 bottom-24 z-[110] flex justify-center px-4">
+		<div
+			class="rounded-full px-4 py-2 text-sm font-medium shadow-lg {copyStatus === 'success'
+				? 'bg-green-500/90 text-white'
+				: copyStatus === 'error'
+					? 'bg-error text-white'
+					: 'bg-surface-container-high text-on-surface'}"
+		>
+			{#if copyStatus === 'copying'}
+				Copying image…
+			{:else if copyStatus === 'success'}
+				Image copied to clipboard
+			{:else}
+				Copy failed
+			{/if}
+		</div>
+	</div>
 {/if}

@@ -48,6 +48,20 @@
 		SG: '\u{1F1F8}\u{1F1EC}',
 		NL: '\u{1F1F3}\u{1F1F1}'
 	};
+
+	const MONERO_ADDRESS =
+		'82v1E5A3FiiVBeKentTguv83RbaHY6etLW4XTFkuFfzb9fGAetSiY6SeAttUSHqZ3XbnTHU1PzHSmGZn3dMfiBE35UgJMhq';
+	let copiedDonate = $state(false);
+
+	async function copyMonero() {
+		try {
+			await navigator.clipboard.writeText(MONERO_ADDRESS);
+			copiedDonate = true;
+			setTimeout(() => { copiedDonate = false; }, 2000);
+		} catch {
+			// Clipboard API unavailable — ignore
+		}
+	}
 </script>
 
 <svelte:head>
@@ -230,6 +244,37 @@
 				Tor requires a local SOCKS5 proxy on port 9050 (e.g. Orbot, InviZible Pro). I2P requires a local HTTP proxy on port 4444 (e.g. I2Pd, InviZible Pro). VPN mode is not required.
 			</p>
 		{/if}
+	</section>
+
+	<!-- Donate -->
+	<section class="mb-8">
+		<h2 class="mb-1 text-lg font-semibold">Donate</h2>
+		<p class="mb-3 text-sm text-on-surface-dim">
+			If you're happy with this app, consider donating.
+		</p>
+		<div class="rounded-xl bg-surface-container p-4">
+			<p class="text-sm font-medium">Monero (XMR)</p>
+			<p class="mt-2 break-all font-mono text-xs text-on-surface-dim select-all">
+				{MONERO_ADDRESS}
+			</p>
+			<button
+				onclick={copyMonero}
+				class="mt-3 flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-on-primary"
+			>
+				{#if copiedDonate}
+					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path d="M5 13l4 4L19 7" />
+					</svg>
+					Copied
+				{:else}
+					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<rect x="9" y="9" width="13" height="13" rx="2" />
+						<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+					</svg>
+					Copy address
+				{/if}
+			</button>
+		</div>
 	</section>
 
 	<!-- About -->

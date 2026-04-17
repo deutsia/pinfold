@@ -11,13 +11,18 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.ContentValues;
+import android.content.Context;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Log;
+
+import androidx.core.content.FileProvider;
 
 import com.deutsia.pinfold.BuildConfig;
 
@@ -301,6 +306,63 @@ public class PrivacyHttpPlugin extends Plugin {
             } catch (Exception e) {
                 if (BuildConfig.DEBUG) Log.e(TAG, "Failed to save to Downloads: " + e.getMessage());
                 call.reject("Failed to save: " + e.getMessage(), "SAVE_ERROR", e);
+            }
+        }).start();
+    }
+
+    /**
+     * Copy a base64-encoded image to the system clipboard as a content:// URI
+     * backed by FileProvider, so any app that supports image paste (Gboard,
+     * Signal, Telegram, chat apps, etc.) can receive it.
+     */
+    @PluginMethod
+    public void copyImageToClipboard(final PluginCall call) {
+        final String base64Data = call.getString("data");
+        final String mimeType = call.getString("mimeType", "image/jpeg");
+
+        if (base64Data == null || base64Data.isEmpty()) {
+            call.reject("data is required");
+            return;
+        }
+
+        new Thread(() -> {
+            try {
+                byte[] bytes = Base64.decode(base64Data, Base64.DEFAULT);
+
+                File clipDir = new File(getContext().getCacheDir(), "clipboard");
+                if (!clipDir.exists()) clipDir.mkdirs();
+                String ext = "image/png".equals(mimeType) ? "png" : "jpg";
+                File outFile = new File(clipDir, "pinfold_clip." + ext);
+                try (FileOutputStream fos = new FileOutputStream(outFile)) {
+                    fos.write(bytes);
+                    fos.flush();
+                }
+
+                String authority = getContext().getPackageName() + ".fileprovider";
+                Uri uri = FileProvider.getUriForFile(getContext(), authority, outFile);
+
+                getActivity().runOnUiThread(() -> {
+                    try {
+                        ClipboardManager cm = (ClipboardManager)
+                            getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+                        ClipData clip = ClipData.newUri(
+                            getContext().getContentResolver(),
+                            "Image",
+                            uri
+                        );
+                        cm.setPrimaryClip(clip);
+
+                        JSObject result = new JSObject();
+                        result.put("success", true);
+                        call.resolve(result);
+                    } catch (Exception e) {
+                        if (BuildConfig.DEBUG) Log.e(TAG, "Clipboard set failed: " + e.getMessage());
+                        call.reject("Clipboard failed: " + e.getMessage(), "CLIP_ERROR", e);
+                    }
+                });
+            } catch (Exception e) {
+                if (BuildConfig.DEBUG) Log.e(TAG, "Failed to copy image: " + e.getMessage());
+                call.reject("Failed to copy: " + e.getMessage(), "COPY_ERROR", e);
             }
         }).start();
     }

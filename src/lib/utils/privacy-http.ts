@@ -17,6 +17,10 @@ export interface PrivacyHttpPlugin {
 		fileName: string;
 		mimeType?: string;
 	}): Promise<{ success: boolean; fileName: string }>;
+	copyImageToClipboard(options: {
+		data: string;
+		mimeType?: string;
+	}): Promise<{ success: boolean }>;
 }
 
 export const PrivacyHttp = registerPlugin<PrivacyHttpPlugin>('PrivacyHttp');

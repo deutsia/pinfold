@@ -108,21 +108,54 @@ function applyTheme(): void {
 	applySystemBars();
 }
 
+/**
+ * Resolve a CSS custom property to a `#rrggbb` string by temporarily
+ * rendering it on a hidden element and reading back the computed color.
+ * Needed because Android's Color.parseColor() can't handle oklch().
+ */
+function resolveCssColor(varName: string, fallback: string): string {
+	if (typeof document === 'undefined') return fallback;
+	const probe = document.createElement('div');
+	probe.style.color = `var(${varName})`;
+	probe.style.display = 'none';
+	document.body.appendChild(probe);
+	const rgb = getComputedStyle(probe).color;
+	document.body.removeChild(probe);
+	const match = rgb.match(/rgba?\(([^)]+)\)/);
+	if (!match) return fallback;
+	const parts = match[1].split(',').map((s) => parseFloat(s.trim()));
+	if (parts.length < 3 || parts.some((n) => Number.isNaN(n))) return fallback;
+	const hex = (n: number) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0');
+	return `#${hex(parts[0])}${hex(parts[1])}${hex(parts[2])}`;
+}
+
 async function applySystemBars(): Promise<void> {
 	const isDark = settings.theme === 'dark';
+	const defaultColor = isDark ? '#000000' : '#f5f5f5';
+	// Wait a frame so the new [data-theme]/[data-mode] attributes are reflected
+	// in computed styles before we sample them.
+	if (typeof requestAnimationFrame !== 'undefined') {
+		await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+	}
+	const statusBarColor = resolveCssColor('--color-surface', defaultColor);
+	const navigationBarColor = resolveCssColor('--color-surface-container', defaultColor);
 	try {
 		const { registerPlugin } = await import('@capacitor/core');
 		const SystemBars = registerPlugin<{
-			setStyle(opts: { isDark: boolean }): Promise<void>;
+			setStyle(opts: {
+				isDark: boolean;
+				statusBarColor?: string;
+				navigationBarColor?: string;
+			}): Promise<void>;
 		}>('SystemBars');
-		await SystemBars.setStyle({ isDark });
+		await SystemBars.setStyle({ isDark, statusBarColor, navigationBarColor });
 	} catch {
 		// Plugin not available (e.g., in browser)
 	}
 	if (typeof document !== 'undefined') {
 		const meta = document.querySelector('meta[name="theme-color"]');
 		if (meta) {
-			meta.setAttribute('content', isDark ? '#000000' : '#f5f5f5');
+			meta.setAttribute('content', statusBarColor);
 		}
 	}
 }
