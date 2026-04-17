@@ -3,6 +3,7 @@
 	import MasonryGrid from '$lib/components/MasonryGrid.svelte';
 	import PinCard from '$lib/components/PinCard.svelte';
 	import LoadingGrid from '$lib/components/LoadingGrid.svelte';
+	import SuggestedTopics from '$lib/components/SuggestedTopics.svelte';
 	import { useFollows } from '$lib/stores/follows.svelte.ts';
 	import {
 		buildFeedSources,
@@ -23,6 +24,20 @@
 	let sourceErrors = $state<Record<string, string>>({});
 	let hasLoadedOnce = $state(false);
 	let initialized = false;
+	let showDiscover = $state(false);
+	let pendingRefresh: ReturnType<typeof setTimeout> | null = null;
+
+	function scheduleRefresh() {
+		if (pendingRefresh) clearTimeout(pendingRefresh);
+		pendingRefresh = setTimeout(() => {
+			pendingRefresh = null;
+			refresh();
+		}, 1500);
+	}
+
+	function onTopicToggled() {
+		if (sources.length > 0) scheduleRefresh();
+	}
 
 	const sources = $derived(
 		buildFeedSources({
@@ -218,20 +233,20 @@
 	</div>
 
 	{#if follows.totalSources === 0}
-		<div class="py-16 text-center">
-			<svg class="mx-auto mb-4 h-16 w-16 text-on-surface-dim" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-				<path d="M4 6h16M4 12h16M4 18h10" />
-			</svg>
-			<p class="text-on-surface-dim">Your feed is empty</p>
-			<p class="mx-auto mt-1 max-w-xs text-sm text-on-surface-dim">
-				Follow a user, a board, or a search topic to start building your personal feed.
+		<div class="mb-6">
+			<h2 class="mb-1 text-lg font-semibold">Pick topics you're into</h2>
+			<p class="mb-5 text-sm text-on-surface-dim">
+				Tap to follow — your feed pulls pins from these topics (plus any users or boards you follow).
 			</p>
-			<button
-				onclick={() => goto('/')}
-				class="mt-6 rounded-full bg-primary px-5 py-2 text-sm font-medium text-on-primary"
-			>
-				Go to search
-			</button>
+			<SuggestedTopics onchange={onTopicToggled} />
+			<div class="mt-6 flex items-center justify-center">
+				<button
+					onclick={() => goto('/')}
+					class="rounded-full bg-surface-container-high px-5 py-2 text-sm font-medium hover:bg-surface-bright"
+				>
+					Search for more
+				</button>
+			</div>
 		</div>
 	{:else}
 		<!-- Source chips -->
@@ -284,7 +299,30 @@
 					>×</span>
 				</button>
 			{/each}
+			<button
+				onclick={() => (showDiscover = !showDiscover)}
+				class="flex items-center gap-1 rounded-full border border-dashed border-outline-dim px-3 py-1 text-xs text-on-surface-dim hover:border-primary hover:text-primary"
+			>
+				{#if showDiscover}
+					<svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+						<path d="M6 15l6-6 6 6" />
+					</svg>
+					Hide suggestions
+				{:else}
+					<svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+						<path d="M12 5v14M5 12h14" />
+					</svg>
+					Discover more
+				{/if}
+			</button>
 		</div>
+
+		{#if showDiscover}
+			<div class="mb-5 rounded-2xl bg-surface-container p-4">
+				<h3 class="mb-3 text-sm font-semibold">Discover topics</h3>
+				<SuggestedTopics onchange={onTopicToggled} />
+			</div>
+		{/if}
 
 		<!-- Status bar -->
 		<div class="mb-3 flex items-center justify-between text-xs text-on-surface-dim">
